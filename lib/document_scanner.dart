@@ -4,6 +4,10 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:printing/printing.dart';
 import 'dart:typed_data';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:uuid/uuid.dart';
 
 class FlutterDocumentScanner extends StatefulWidget {
   const FlutterDocumentScanner({super.key});
@@ -14,6 +18,7 @@ class FlutterDocumentScanner extends StatefulWidget {
 
 class _FlutterDocumentScannerState extends State<FlutterDocumentScanner> {
   var pdf;
+  var uploaded = false;
 
   Future<void> scanDocumentAsPdf() async {
     try {
@@ -24,6 +29,7 @@ class _FlutterDocumentScannerState extends State<FlutterDocumentScanner> {
       }
       setState(() {
         pdf = result.pdfUri.replaceAll("file://", "");
+        uploaded = false;
       });
       print('PDF: ${result.pdfUri} (${result.pageCount} pages)');
     } on DocScanException catch (e) {
@@ -31,15 +37,33 @@ class _FlutterDocumentScannerState extends State<FlutterDocumentScanner> {
     }
   }
 
-  Future<void> uploadPdf(pdf) async {
-    setState(() {
-      pdf = pdf;
-    });
+  Future<String> uploadPdf() async {
     final file = File(pdf);
+    var userId = dotenv.env['MOCK_USER_ID'] ?? '';
+    var path = "$userId/quote-${"${Uuid().v4()}"}.pdf";
     final _ = await Supabase.instance.client
       .storage
-      .from('quotes') // TODO: put document in user folder
-      .upload(pdf, file);
+      .from('quotes')
+      .upload(path, file);
+
+      return Supabase.instance.client.storage.from('quotes').createSignedUrl(path, 600);
+  }
+
+  void processDocument() async {
+    var file_url = await uploadPdf();
+    var api_url = dotenv.env['PROCESSING_API_URL'] ?? '';
+
+    http.post(
+      Uri.parse(api_url),
+      headers: <String, String>{
+        'Content-Type': 'application/json; charset=UTF-8',
+      },
+      body: jsonEncode(<String, String>{'pdf': file_url}),
+    );
+
+    setState(() {
+        uploaded = true;
+    });
   }
 
   Future<void> previewPdf(path) async {
@@ -60,12 +84,8 @@ class _FlutterDocumentScannerState extends State<FlutterDocumentScanner> {
         children: [
           ElevatedButton(onPressed: () => scanDocumentAsPdf(), child: const Text("Click here to scan document")),
           SizedBox(height: 10,),
-          Container(
-            height: 500,
-            width: 250,
-            child: pdf == null ?
-            const Text("No image taken yet")
-            : ElevatedButton.icon(
+          ((pdf == null) ? const Text("No image taken yet")
+          : ElevatedButton.icon(
                 onPressed: () async {
                   try {
                     await previewPdf(pdf);
@@ -75,8 +95,11 @@ class _FlutterDocumentScannerState extends State<FlutterDocumentScanner> {
                 },
                 icon: const Icon(Icons.visibility, size: 18),
                 label: const Text('Preview'),
-              )
-          )
+              )),
+          SizedBox(height: 10,),
+          ElevatedButton(onPressed: ((pdf == null || uploaded) ? null : () => processDocument()), child: const Text("Process quote")),
+          SizedBox(height: 10,),
+          uploaded ? Text("submitted for processing") : SizedBox(height: 10,)
         ],
       ),
     );

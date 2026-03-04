@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import './document_scanner.dart';
 
 void main() async {
+  await dotenv.load(fileName: ".env");
   final supabaseUrl = dotenv.env['PUBLIC_SUPABASE_URL'] ?? '';
   final supabaseAnonKey = dotenv.env['PUBLIC_SUPABASE_ANON_KEY'] ?? '';
 
