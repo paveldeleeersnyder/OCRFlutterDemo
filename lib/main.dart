@@ -57,6 +57,17 @@ class _FlutterDocumentScannerState extends State<FlutterDocumentScanner> {
     }
   }
 
+  Future<void> uploadPdf(pdf) async {
+    setState(() {
+      pdf = pdf;
+    });
+    final file = File(pdf);
+    final _ = await Supabase.instance.client
+      .storage
+      .from('quotes') // TODO: put document in user folder
+      .upload(pdf, file);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Center(
