@@ -12,6 +12,8 @@ dependencies:
   flutter_doc_scanner: ^0.0.18
   flutter_dotenv: ^6.0.0
   supabase_flutter: ^2.0.0
+  pdf: ^3.11.1
+  printing: ^5.13.4
 
 dev_dependencies:
   flutter_test:
