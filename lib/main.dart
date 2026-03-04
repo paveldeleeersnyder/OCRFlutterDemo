@@ -39,25 +39,19 @@ class FlutterDocumentScanner extends StatefulWidget {
 }
 
 class _FlutterDocumentScannerState extends State<FlutterDocumentScanner> {
-  var image;
+  var pdf;
 
-  Future<void> scanAsImages() async {
+  Future<void> scanDocumentAsPdf() async {
     try {
-      final result = await FlutterDocScanner().getScannedDocumentAsImages(
-        page: 2,
-        imageFormat: ImageFormat.png,
-      );
+      final result = await FlutterDocScanner().getScannedDocumentAsPdf(page: 40);
       if (result == null) {
         print('User cancelled');
         return;
       }
-      print('Scanned ${result.count} images');
-      for (final path in result.images) {
-        print('Image: $path');
-      }
       setState(() {
-        image = result.images[0].replaceAll("file://", "");
+        pdf = result.pdfUri;
       });
+      print('PDF: ${result.pdfUri} (${result.pageCount} pages)');
     } on DocScanException catch (e) {
       print('Scan failed: ${e.code} - ${e.message}');
     }
@@ -69,12 +63,14 @@ class _FlutterDocumentScannerState extends State<FlutterDocumentScanner> {
       child: Column(
         mainAxisAlignment: .center,
         children: [
-          ElevatedButton(onPressed: () => scanAsImages(), child: const Text("Click here to scan document")),
+          ElevatedButton(onPressed: () => scanDocumentAsPdf(), child: const Text("Click here to scan document")),
           SizedBox(height: 10,),
           Container(
             height: 500,
             width: 250,
-            child: image == null ? const Text("No image taken yet") : Image.file(File(image))
+            child: pdf == null ?
+            const Text("No image taken yet")
+            : Text("Placeholder for PDF preview coming")
           )
         ],
       ),
