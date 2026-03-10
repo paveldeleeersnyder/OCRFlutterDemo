@@ -46,11 +46,11 @@ class _FlutterDocumentScannerState extends State<FlutterDocumentScanner> {
       .from('quotes')
       .upload(path, file);
 
-      return Supabase.instance.client.storage.from('quotes').createSignedUrl(path, 600);
+    return path;
   }
 
   void processDocument() async {
-    var file_url = await uploadPdf();
+    var file_path = await uploadPdf();
     var api_url = dotenv.env['PROCESSING_API_URL'] ?? '';
 
     http.post(
@@ -58,7 +58,7 @@ class _FlutterDocumentScannerState extends State<FlutterDocumentScanner> {
       headers: <String, String>{
         'Content-Type': 'application/json; charset=UTF-8',
       },
-      body: jsonEncode(<String, String>{'pdf': file_url}),
+      body: jsonEncode(<String, String>{'pdf': file_path}),
     );
 
     setState(() {
